@@ -5,7 +5,7 @@ Created on Nov 7, 2017
 '''
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation, Dropout
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 import keras
 import numpy as np
 from numpy import *
@@ -20,7 +20,7 @@ i0 = 0
 i1 = 0
 i2 = 0
 
-col_dim = 5
+col_dim = 7
 
 input_x = np.empty(shape=[0, col_dim])
 output_y = np.empty(shape=[0, 3])
@@ -63,10 +63,11 @@ def build_model():
     model.add(Dense(3, init='uniform'))
     model.add(Activation('softmax'))
 
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)  
-    model.compile(loss='mean_squared_error', optimizer=sgd)
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True) 
+    adam = Adam() 
+    model.compile(loss='mean_squared_error', optimizer=adam)
     
-    model.fit(input_x, output_y, nb_epoch=50, batch_size=10, validation_split=0.1)
+    model.fit(input_x, output_y, nb_epoch=60, batch_size=10, validation_split=0.1)
     score = model.evaluate(input_x, output_y, batch_size=10)
     print(score)
     model.save(model_path)
@@ -78,6 +79,6 @@ def predict(input_test):
     return np.argmax(output)
     
 build_model()
-input_test = np.array([[0.58, 0.34, 1.2, 0.8, 0.13]])
+input_test = np.array([[0.58, 0.34, 1.2, 0.8, 0.13, 0.7, 0.5]])
 print(input_test.shape)
 print(predict(input_test))    

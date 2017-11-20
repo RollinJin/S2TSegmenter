@@ -50,6 +50,9 @@ def process_events(fpath):
         else:
             cur_pause = max_pause
         
+        pre_word_length += 1 
+        pre_word_totaltime += word_time 
+        
         if cur_pause>min_pause:
             word_pause = []
             if pre_word_length>0:
@@ -58,15 +61,20 @@ def process_events(fpath):
             word_pause.append(cur_pause)
             word_pause.append(pre_avg_time)
             word_pause.append(pre_word_length/10.0)
+            word_pause.append(0.0)
+            word_pause.append(0.0)
+            
+            if len(all_pauses)>0:
+                preWordPause = all_pauses[-1]
+                preWordPause[3] = pre_avg_time
+                preWordPause[4] = pre_word_length/10.0
             
             word_pause_idx[i] = len(all_pauses) #Record the pause index for this word
             all_pauses.append(word_pause)
             pre_avg_time = 0.0
             pre_word_length = 0;
             pre_word_totaltime = 0.0
-        else:
-            pre_word_length += 1 
-            pre_word_totaltime += word_time 
+        
         #print(word)
     
     pause_num = len(all_pauses)
@@ -87,7 +95,7 @@ def process_events(fpath):
     for pause in all_pauses:
         new_all_pauses.append(pre_list+pause)
     
-    #print(new_all_pauses)
+    print(new_all_pauses)
     output_str = ""
     
     predicts_output = model.predict(new_all_pauses, batch_size=128, verbose=1) 
@@ -132,6 +140,6 @@ def process_events(fpath):
 #fpath = "../corpus/json/Blockchain_events.json"
 #fpath = "../corpus/json/Watson_VR_events.json"
 #fpath = "../corpus/json/Watson_Discovery_events.json"
-fpath = "../corpus/json/Car_events.json"
-#fpath = "../corpus/json/SETI_Institute_events.json"
+#fpath = "../corpus/json/Car_events.json"
+fpath = "../corpus/json/SETI_Institute_events.json"
 process_events(fpath)
