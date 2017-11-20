@@ -95,14 +95,32 @@ def process_events(fpath):
     predicts = np.argmax(predicts_output)
     #print(predicts)
     
+    
+    if len(all_words[0])==4:
+        labelFlag = True
+    else:
+        labelFlag = False
+        
+        
     for j in range(0, word_num):
-        if word_pause_idx[j]==-1:
-            output_str = output_str + all_words[j][0] + " "
+        if j<word_num-1 and labelFlag and all_words[j][3]!=all_words[j+1][3]:
+            periodFlag = True
         else:
-           pause_idx = word_pause_idx[j]     
-           predict = np.argmax(predicts_output[pause_idx])
-           #print(predict)
-           output_str = output_str + all_words[j][0] + flags[predict] + " "  
+            periodFlag = False
+                
+        if word_pause_idx[j]==-1:
+            output_str = output_str + all_words[j][0]  
+            if periodFlag:
+                output_str = output_str + "."            
+            output_str = output_str + " "
+        else:
+            pause_idx = word_pause_idx[j]     
+            predict = np.argmax(predicts_output[pause_idx])
+            #print(predict)
+            if periodFlag:
+                output_str = output_str + all_words[j][0] + ". "
+            else:               
+                output_str = output_str + all_words[j][0] + flags[predict] + " "  
    
     
     segments = nltk.sent_tokenize(output_str)
@@ -115,4 +133,5 @@ def process_events(fpath):
 #fpath = "../corpus/json/Watson_VR_events.json"
 #fpath = "../corpus/json/Watson_Discovery_events.json"
 fpath = "../corpus/json/Car_events.json"
+#fpath = "../corpus/json/SETI_Institute_events.json"
 process_events(fpath)
