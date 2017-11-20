@@ -14,25 +14,23 @@ flags = [',', ':', '.', '?']
 
 root_dir = "../corpus/xls/"
 
+fpath_array = ['../corpus/json/Watson_VR_events.json',
+               '../corpus/json/Watson_Discovery_events.json',
+               '../corpus/json/Blockchain_events.json']
 
-#fpath = "../corpus/json/Watson_VR_events.json"
-#xls_fname = "Watson_VR.xlsx"
-#array_name = "../corpus/array/Watson_VR_Data.npy"
+xls_array = ['Watson_VR.xlsx',
+             'Watson_Discovery.xlsx',
+             'Blockchain.xls']
 
+array_names = ['../corpus/array/Watson_VR_Data.npy',
+               '../corpus/array/Watson_Discovery_Data.npy',
+               '../corpus/array/Blockchain_Data.npy']
 
-#fpath = "../corpus/json/Watson_Discovery_events.json"
-#xls_fname = "Watson_Discovery.xlsx"
-#array_name = "../corpus/array/Watson_Discovery_Data.npy"
+corpusNum = 3
 
-
-fpath = "../corpus/json/Blockchain_events.json"
-xls_fname = "Blockchain.xls"
-array_name = "../corpus/array/Blockchain_Data.npy"
-
-
-cell_content = ""
 
 def load_xls(fname, skip_fisrt_line=False, remove_tstamp=True):
+    cell_content = ""
     exlpath = root_dir + fname
     data = xlrd.open_workbook(exlpath)
     table = data.sheets()[0]
@@ -85,7 +83,8 @@ def load_events(fpath):
     min_pause = 0.05
     max_pause = 2.0
         
-    #[Overall average pause, overall average Word time, current pause, average word time of previous words, word length between previous pause]
+    #[Overall average pause, overall average Word time, current pause, average word time of previous words, word length between previous pause, 
+    # average word time of backward words, word length between backward pause]
     for i in range(0, word_num):
         word = all_words[i]
         word_time = word[2] - word[1]
@@ -97,6 +96,9 @@ def load_events(fpath):
         else:
             cur_pause = max_pause
         
+        pre_word_length += 1 
+        pre_word_totaltime += word_time 
+        
         if cur_pause>min_pause:
             word_pause = []
             if pre_word_length>0:
@@ -105,15 +107,20 @@ def load_events(fpath):
             word_pause.append(cur_pause)
             word_pause.append(pre_avg_time)
             word_pause.append(pre_word_length/10.0)
+            word_pause.append(0.0)
+            word_pause.append(0.0)
             word_pause.append(word[0])
+            
+            if len(all_pauses)>0:
+                preWordPause = all_pauses[-1]
+                preWordPause[3] = pre_avg_time
+                preWordPause[4] = pre_word_length/10.0
             
             all_pauses.append(word_pause)
             pre_avg_time = 0.0
             pre_word_length = 0;
             pre_word_totaltime = 0.0
-        else:
-            pre_word_length += 1 
-            pre_word_totaltime += word_time 
+            
         #print(word)
     
     pause_num = len(all_pauses)
@@ -140,7 +147,7 @@ def parse_pause(all_pauses, all_tokens):
     valid_pause = []
     cur_pos = 0
     for vPause in all_pauses:
-        word = vPause[5]
+        word = vPause[-1]
         try:
             idx = all_tokens.index(word, cur_pos)
             if idx>-1 :
@@ -150,14 +157,17 @@ def parse_pause(all_pauses, all_tokens):
                         out_idx=1
                     else: # Period
                         out_idx=2   
-                else: # Black space
+                else: # Blank space
                     out_idx = 0                           
                 vPause.append(out_idx);    
                 valid_pause.append(vPause)
                 #if out_idx == 1:
-                #    valid_pause.append(vPause) #Double the samples of comma
-                #print(word, out_idx)             
-                cur_pos = idx + 1          
+                   # valid_pause.append(vPause) #Double the samples of comma
+                #print(word, out_idx) 
+                if (idx - cur_pos)>30: 
+                    print(str(idx - cur_pos) + ":" + word)          
+                else:
+                    cur_pos = idx + 1         
         except ValueError as e:
             cur_pos += 0 
             #print(e) 
@@ -165,24 +175,30 @@ def parse_pause(all_pauses, all_tokens):
 
 
 
-all_pauses = load_events(fpath)
-print(all_pauses)
+for i in range(0, corpusNum):
+    fpath = fpath_array[i]
+    xls_fname = xls_array[i]
+    array_name = array_names[i]
 
-#xls_data = load_xls(xls_fname, False, True)
-xls_data = load_xls(xls_fname, True, False) #Blockchain
-
-all_tokens = []
-for segment in xls_data:
-    #print(segment)
-    tokens = nltk.word_tokenize(segment)
-    all_tokens = all_tokens + tokens
-
-#print(all_tokens)
-
-
-valid_pause = parse_pause(all_pauses, all_tokens)
-print(valid_pause) 
-valid_pause = np.delete(valid_pause, 5, axis=1)
-
-np.save(array_name, valid_pause)   
+    all_pauses = load_events(fpath)
+    print(all_pauses)
+    
+    #xls_data = load_xls(xls_fname, False, True)
+    xls_data = load_xls(xls_fname, True, False) #Blockchain
+    
+    all_tokens = []
+    for segment in xls_data:
+        #print(segment)
+        tokens = nltk.word_tokenize(segment)
+        all_tokens = all_tokens + tokens
+    
+    #print(all_tokens)
+    
+    
+    valid_pause = parse_pause(all_pauses, all_tokens)
+    #print(valid_pause) 
+    valid_pause = np.delete(valid_pause, -2, axis=1)
+    print(valid_pause) 
+    
+    np.save(array_name, valid_pause)   
 
